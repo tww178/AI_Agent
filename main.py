@@ -24,10 +24,7 @@ def main():
     messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])] #I don't understsand this line
     client = genai.Client(api_key=api_key) #https://googleapis.github.io/python-genai/genai.html#genai.client.Client
     
-    if args.verbose:
-        print(f"User prompt: {args.user_prompt}")
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")        
+       
     
     for _ in range(20):
         response = client.models.generate_content( #https://googleapis.github.io/python-genai/genai.html#genai.models.Models, https://googleapis.github.io/python-genai/genai.html#genai.models.Models.generate_content
@@ -35,6 +32,8 @@ def main():
             contents=messages, #Why can it be a list?
             config=types.GenerateContentConfig(tools=[available_functions], system_instruction=system_prompt, temperature=0), #https://googleapis.github.io/python-genai/genai.html#genai.types.GenerateContentConfig
         )
+
+         
 
         #https://googleapis.github.io/python-genai/genai.html#genai.types.GenerateContentConfig.tools
         #https://googleapis.github.io/python-genai/genai.html#genai.types.GenerateContentConfig.system_instruction
@@ -49,17 +48,23 @@ def main():
         if not response.usage_metadata:
             raise RuntimeError("Gemini API response appears to be malformed")
 
+        if args.verbose:
+            print(f"User prompt: {args.user_prompt}")
+            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+
         if response.candidates:
             for c in response.candidates:
-                messages.append(c.content)
+                if c.content: # add this guard to avoid appending None candidates
+                    messages.append(c.content)
 
         #print("Prompt tokens:", response.usage_metadata.prompt_token_count)
         #print("Response tokens:", response.usage_metadata.candidates_token_count)
 
         if not response.function_calls:
-            print("Response:")
+            print("Final response:")
             print(response.text)
-            break
+            return
 
         function_responses = []
         
@@ -77,8 +82,9 @@ def main():
             function_responses.append(function_call_result.parts[0])
         
         messages.append(types.Content(role="user", parts=function_responses))
-        if _ == 19: #Help I am quite sure this part is wrong!
-            sys.exit("The maximum number of iterations is reached and the model still hasn't produced a final response")
+
+    print("Maximum iterations (20) reached")
+    sys.exit(1)
         
 
 
