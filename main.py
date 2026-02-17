@@ -21,7 +21,7 @@ def main():
     # Now we can access `args.user_prompt`
 
 
-    messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])] #I don't understsand this line
+    messages = [types.Content(role="user", parts=[types.Part(text=args.user_prompt)])] #I don't understsand this line. Boot's ans: It’s initializing the conversation history as a list because contents is multi-turn: each Content is one message (“user”, “model”, and later “tool results” packaged as role "user"). The API expects the whole history each call, not just the latest text.
     client = genai.Client(api_key=api_key) #https://googleapis.github.io/python-genai/genai.html#genai.client.Client
     
        
@@ -63,8 +63,8 @@ def main():
 
         if not response.function_calls:
             print("Final response:")
-            print(response.text)
-            return
+            #print(response.text) - this part is deleted in CH4 L1 suggested solution
+            return #This part breaks out of the loop if it has come to the final answer before reaching max iterations The loop ends when the model doesn't request any more function calls, i.e., when it has a final response for the user. 
 
         function_responses = []
         
